@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.13
+/* AVR Forge for Acode 0.1.14
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -86,8 +86,8 @@
       '<button id="avr-forge-open-project" class="btn" style="margin-top:10px;">باز کردن پروژه موجود</button>',
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
-      '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.13</small>',
+      '<p>پس از ساخت پروژه، ابزارهای AVR و make در ترمینال Alpine نصب می‌شوند.</p>',
+      '<small>نسخه 0.1.14</small>',
       '</div>'
     ].join("");
   }
@@ -201,6 +201,47 @@
     return true;
   }
 
+  async function installAvrToolchain() {
+    const terminalApi = acode.require("terminal");
+    if (!terminalApi || typeof terminalApi.createServer !== "function" ||
+        typeof terminalApi.write !== "function") {
+      throw new Error("API ترمینال Acode در دسترس نیست؛ ترمینال داخلی را فعال یا به‌روزرسانی کن.");
+    }
+
+    notify("AVR Forge", "در حال آماده‌سازی ترمینال Alpine برای نصب ابزارهای AVR...", "info");
+
+    // createServer opens a visible Alpine terminal tab and runs the terminal
+    // installation flow first if the Alpine environment is not installed yet.
+    const terminalInstance = await terminalApi.createServer({
+      name: "AVR Toolchain Setup"
+    });
+
+    if (!terminalInstance || !terminalInstance.id) {
+      throw new Error("ترمینال Alpine ایجاد نشد؛ نصب ابزارهای AVR شروع نشد.");
+    }
+
+    const command = [
+      "set -e",
+      "echo '=== Updating Alpine package indexes ==='",
+      "apk update",
+      "echo '=== Installing AVR toolchain and GNU Make ==='",
+      "apk add --no-cache make gcc-avr avr-libc binutils-avr",
+      "echo '=== Verifying installation ==='",
+      "avr-gcc --version | head -n 1",
+      "avr-objcopy --version | head -n 1",
+      "make --version | head -n 1",
+      "echo 'AVR toolchain installation completed successfully.'"
+    ].join(" && ");
+
+    terminalApi.write(terminalInstance.id, command + "\r");
+    notify(
+      "AVR Forge",
+      "فرمان نصب در ترمینال Alpine اجرا شد؛ خروجی و نتیجه را در تب AVR Toolchain Setup ببین.",
+      "success"
+    );
+    return true;
+  }
+
   async function openExistingProject() {
     const fileBrowser = acode.require("fileBrowser");
 
@@ -257,7 +298,18 @@
       "This plugin version does not run the compiler inside Acode yet."
     ].join("\n") + "\n");
 
-    notify("AVR Forge", "پروژه ساخته شد؛ در حال باز کردن main.c...", "success");
+    notify("AVR Forge", "پروژه ساخته شد؛ نصب ابزارهای کامپایل AVR و make آغاز می‌شود.", "success");
+    try {
+      await installAvrToolchain();
+    } catch (installError) {
+      console.error("[AVR Forge] toolchain installation:", installError);
+      notify(
+        "AVR Forge - نصب ابزارها",
+        "پروژه ساخته شد، اما نصب خودکار ابزارها شروع نشد: " +
+          (installError && installError.message ? installError.message : String(installError)),
+        "error"
+      );
+    }
     await openProjectFolder(projectUrl, folderName);
   }
 
