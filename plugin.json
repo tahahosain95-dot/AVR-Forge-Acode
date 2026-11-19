@@ -1,0 +1,21 @@
+{
+  "id": "com.madarlab.avrforge",
+  "name": "AVR Forge for Acode",
+  "version": "0.1.0",
+  "main": "main.js",
+  "readme": "README.md",
+  "minVersionCode": 958,
+  "license": "MIT",
+  "keywords": [
+    "AVR",
+    "AVR-GCC",
+    "ATmega",
+    "embedded",
+    "C"
+  ],
+  "repository": "https://github.com/tahahosain95-dot/AVR-Forge-Acode",
+  "author": {
+    "name": "AVR Forge contributors",
+    "github": "tahahosain95-dot"
+  }
+}
