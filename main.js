@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.15
+/* AVR Forge for Acode 0.1.16
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>پس از ساخت پروژه، ابزارهای AVR و make در ترمینال Alpine نصب می‌شوند.</p>',
-      '<small>نسخه 0.1.15</small>',
+      '<small>نسخه 0.1.16</small>',
       '</div>'
     ].join("");
   }
@@ -203,49 +203,42 @@
 
   async function installAvrToolchain() {
     const terminalApi = acode.require("terminal");
-    if (!terminalApi || typeof terminalApi.createServer !== "function" ||
-        typeof terminalApi.write !== "function") {
+    if (!terminalApi || typeof terminalApi.createServer !== "function" || typeof terminalApi.write !== "function") {
       throw new Error("API ترمینال Acode در دسترس نیست؛ ترمینال داخلی را فعال یا به‌روزرسانی کن.");
     }
-
     notify("AVR Forge", "در حال بررسی ابزارهای AVR در Alpine...", "info");
-
-    const terminalInstance = await terminalApi.createServer({
-      name: "AVR Toolchain Setup"
-    });
-
-    if (!terminalInstance || !terminalInstance.id) {
-      throw new Error("ترمینال Alpine ایجاد نشد؛ بررسی ابزارهای AVR شروع نشد.");
-    }
-
-    // Check package records and executables on every project creation.
-    // Only refresh indexes and install packages when at least one is missing.
+    const terminalInstance = await terminalApi.createServer({ name: "AVR Toolchain Setup" });
+    if (!terminalInstance || !terminalInstance.id) throw new Error("ترمینال Alpine ایجاد نشد.");
     const command = [
-      "set -e",
-      "echo '=== Checking AVR toolchain packages ==='",
-      "if apk info -e make >/dev/null 2>&1 && apk info -e gcc-avr >/dev/null 2>&1 && apk info -e avr-libc >/dev/null 2>&1 && apk info -e binutils-avr >/dev/null 2>&1 && command -v avr-gcc >/dev/null 2>&1 && command -v avr-objcopy >/dev/null 2>&1 && command -v make >/dev/null 2>&1; then",
-      "  echo 'All AVR toolchain packages are already installed. Skipping installation.'",
-      "else",
-      "  echo 'One or more AVR tools are missing. Installing required packages...'",
-      "  apk update",
-      "  apk add --no-cache make gcc-avr avr-libc binutils-avr",
-      "fi",
-      "echo '=== Verifying AVR toolchain ==='",
-      "avr-gcc --version | head -n 1",
-      "avr-objcopy --version | head -n 1",
-      "make --version | head -n 1",
-      "echo 'AVR toolchain check completed successfully.'"
+      'LOG="$HOME/avr-forge-setup.log"',
+      "{",
+      "  echo AVR Forge toolchain setup",
+      "  echo Checking required packages and commands",
+      "  MISSING=0",
+      '  for pkg in make gcc-avr avr-libc binutils-avr; do if apk info -e "$pkg" >/dev/null 2>&1; then echo "[OK] package: $pkg"; else echo "[MISSING] package: $pkg"; MISSING=1; fi; done',
+      '  for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] command: $cmd"; else echo "[MISSING] command: $cmd"; MISSING=1; fi; done',
+      '  if [ "$MISSING" -ne 0 ]; then',
+      "    echo Installing missing AVR packages",
+      "    apk update && apk add --no-cache make gcc-avr avr-libc binutils-avr || echo INSTALLATION_FAILED",
+      "  else",
+      "    echo All required tools are installed; skipping installation.",
+      "  fi",
+      "  echo Final verification",
+      '  for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do command -v "$cmd" >/dev/null 2>&1 && echo "[OK] $cmd" || echo "[MISSING] $cmd"; done',
+      '  command -v avr-gcc >/dev/null 2>&1 && avr-gcc --version | head -n 1',
+      "  echo Setup process finished",
+      '} > "$LOG" 2>&1',
+      'STATUS=$?',
+      'cat "$LOG"',
+      'echo "Setup exit code: $STATUS"',
+      'echo "Full log: $LOG"',
+      "echo Press Enter when you have finished reading this output.",
+      "read -r AVR_FORGE_PAUSE"
     ].join("\n");
-
     terminalApi.write(terminalInstance.id, command + "\r");
-    notify(
-      "AVR Forge",
-      "بررسی ابزارهای AVR در تب AVR Toolchain Setup اجرا شد؛ اگر همه نصب باشند، نصب مجدد انجام نمی‌شود.",
-      "success"
-    );
+    notify("AVR Forge", "خروجی در تب AVR Toolchain Setup می‌ماند و در ~/avr-forge-setup.log ذخیره می‌شود.", "success");
     return true;
   }
-
   async function openExistingProject() {
     const fileBrowser = acode.require("fileBrowser");
 
