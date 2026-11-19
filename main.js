@@ -143,7 +143,8 @@
       return;
     }
 
-    let folderUrl = String(selected.url);\n    while (folderUrl.endsWith("/")) folderUrl = folderUrl.slice(0, -1);
+    let folderUrl = String(selected.url);
+    while (folderUrl.endsWith("/")) folderUrl = folderUrl.slice(0, -1);
     const mainCUrl = folderUrl + "/main.c";
 
     await Promise.resolve(openFolder(selected.url, {
