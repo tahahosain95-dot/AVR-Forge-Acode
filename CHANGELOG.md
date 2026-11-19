@@ -1,8 +1,15 @@
 # Changelog
 
+## 0.1.8
+- Explicitly activate the newly opened main.c tab with EditorFile.makeActive().
+- Hide the AVR Forge plugin page after the editor tab is activated.
+- Uses documented Acode EditorFile and Page APIs; not yet runtime-tested on device.
+
+## 0.1.7
+- Initial attempt to close the plugin page and activate main.c after opening a project.
+
 ## 0.1.6
 - When opening an existing project folder, activate it as the Acode workspace and open its main.c file in a new editor tab.
-- This release has not yet been runtime-tested on Acode 1.13.5.
 
 ## 0.1.5
 - Add an "Open existing project" button to the AVR Forge page.
