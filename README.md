@@ -2,7 +2,7 @@
 
 AVR Forge is an Acode plugin project for creating AVR C firmware workspaces.
 
-## Current status — 0.1.11
+## Current status — 0.1.12
 
 This is an **early project-scaffolding release**, not the complete AVR IDE.
 
@@ -26,13 +26,13 @@ The generated Makefile is intended for a system where `avr-gcc`, AVR-LibC, GNU B
 1. Download the repository ZIP from GitHub.
 2. In Acode, open Settings → Plugins.
 3. Choose the local ZIP install option and select the downloaded archive.
-4. Open the Command Palette and run **AVR Forge**.
+4. Open AVR Forge from its sidebar entry and use the plugin-specific settings entry to launch its page.
 
 ## Create a project
 
 Open the AVR Forge page. Choose “ساخت پروژه جدید”, enter a project name, select an MCU, and choose the parent folder.
 
-To open an existing project, choose “باز کردن پروژه موجود” and select its folder. Acode loads that folder into the sidebar file tree as the active workspace, opens its `main.c` file in a new editor tab, activates that tab, and hides the AVR Forge page.
+To open an existing project, choose “باز کردن پروژه موجود” and select its folder. Acode loads that folder as the active workspace. AVR Forge closes its own page, returns from the plugin-specific settings screen, then activates the `main.c` tab. This navigation sequence is an implementation attempt and still needs runtime verification on the target device.
 
 The generated starter uses an 8 MHz clock definition. Change `F_CPU` to match your actual clock configuration.
 
@@ -42,7 +42,7 @@ The manifest currently declares Acode version code 958 or newer because the proj
 
 ## Development notes
 
-The plugin uses Acode's documented `setPluginInit`, `setPluginUnmount`, `fs`, `fileBrowser`, `openFolder`, `editorFile`, `select`, and `prompt` APIs. The `EditorFile.makeActive()` method and page `hide()` method are used to switch to the code tab. It has not yet been device-tested; please treat this as an initial test build.
+The plugin uses Acode's `setPluginInit`, `setPluginUnmount`, `fileBrowser`, `openFolder`, `editorFile`, `EditorManager.switchFile()`, `Page.hide()`, and `ActionStack.pop()` APIs. When opened from plugin-specific settings, it first hides the plugin page and then pops one settings navigation action before activating `main.c`. This build has not been runtime-tested on the target device.
 
 ## License
 
