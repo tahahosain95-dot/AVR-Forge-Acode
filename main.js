@@ -217,11 +217,12 @@
       info: "برای ورود به محیط AVR Forge این گزینه را انتخاب کن.",
       value: "open",
       select: [["open", "باز کردن AVR Forge"]],
-      cb: function () {
-        // Plugin settings are the supported entry point exposed by Acode's plugin manager.
+    }],
+    cb: function (key, value) {
+      if (key === "open_avr_forge" && value === "open") {
         openPluginPage();
       }
-    }]
+    }
   });
 
   acode.setPluginUnmount(PLUGIN_ID, function () {
