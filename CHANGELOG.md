@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.9
+- Reuse an already-open main.c tab when possible.
+- Switch to main.c through Acode's EditorManager and verify the active tab before hiding the plugin page.
+- Keep the plugin page open and report an error if main.c cannot be confirmed as active.
+- Runtime behavior still requires testing on the target device.
+
+# Changelog
+
 ## 0.1.8
 - Explicitly activate the newly opened main.c tab with EditorFile.makeActive().
 - Hide the AVR Forge plugin page after the editor tab is activated.
