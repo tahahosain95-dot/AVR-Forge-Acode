@@ -235,9 +235,9 @@
       "avr-objcopy --version | head -n 1",
       "make --version | head -n 1",
       "echo 'AVR toolchain check completed successfully.'"
-    ].join("\\n");
+    ].join("\n");
 
-    terminalApi.write(terminalInstance.id, command + "\\r");
+    terminalApi.write(terminalInstance.id, command + "\r");
     notify(
       "AVR Forge",
       "بررسی ابزارهای AVR در تب AVR Toolchain Setup اجرا شد؛ اگر همه نصب باشند، نصب مجدد انجام نمی‌شود.",
