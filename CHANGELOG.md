@@ -7,8 +7,6 @@
 - Use Acode's documented EditorFile, EditorManager, Page, and Action Stack APIs.
 - Runtime behavior still requires verification on Acode 1.13.5.
 
-# Changelog
-
 ## 0.1.11
 - Detect launch from the plugin-specific Settings page.
 - Pop both the AVR Forge page and plugin Settings navigation layer before activating main.c.
