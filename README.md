@@ -2,7 +2,7 @@
 
 AVR Forge is an Acode plugin project for creating AVR C firmware workspaces.
 
-## Current status — 0.1.14
+## Current status — 0.1.15
 
 This is an **early project-scaffolding release**, not the complete AVR IDE.
 
@@ -12,7 +12,7 @@ Implemented:
 - Open an existing project folder as an Acode workspace from the AVR Forge page.
 - MCU selection from a starter list.
 - Generated `main.c`, `Makefile`, and project `README.md`.
-- Automatically opens a visible Acode Alpine terminal after project creation and runs `apk update` followed by installation of `make`, `gcc-avr`, `avr-libc`, and `binutils-avr`.
+- Automatically opens a visible Acode Alpine terminal after project creation, checks whether `make`, `gcc-avr`, `avr-libc`, and `binutils-avr` are installed, and installs them only when one or more packages or required executables are missing.
 - Verifies the installed `avr-gcc`, `avr-objcopy`, and `make` versions in the terminal output.
 
 Not implemented yet:
@@ -20,7 +20,7 @@ Not implemented yet:
 - AVR register autocomplete and dedicated syntax highlighting.
 - Bundled compiler toolchain.
 
-After creating a project, AVR Forge opens the built-in Alpine terminal and starts installing `gcc-avr`, `avr-libc`, `binutils-avr`, and `make`. The install output appears in the `AVR Toolchain Setup` terminal tab. The first run may take some time and requires an internet connection.
+After each project creation, AVR Forge opens the built-in Alpine terminal and checks the package records and required executables. If everything is present, it skips installation. If any required package or executable is missing, it runs `apk update` and installs `gcc-avr`, `avr-libc`, `binutils-avr`, and `make`. Output appears in the `AVR Toolchain Setup` terminal tab. Internet access is needed only when installation is required.
 
 ## Install
 
