@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.7
+/* AVR Forge for Acode 0.1.8
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -86,7 +86,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.7</small>',
+      '<small>نسخه 0.1.8</small>',
       '</div>'
     ].join("");
   }
@@ -168,11 +168,9 @@
       throw new Error("Acode EditorFile API is not available in this version.");
     }
 
-    // Wait until the editor tab is registered, then activate it and hide AVR Forge.
-    await Promise.resolve(editorFile);
-    const editorManager = acode.require("editorManager");
-    if (editorManager && typeof editorManager.setActive === "function") {
-      editorManager.setActive(editorFile);
+    // Explicitly activate the newly created editor tab, then hide the plugin page.
+    if (editorFile && typeof editorFile.makeActive === "function") {
+      editorFile.makeActive();
     }
 
     if (page && typeof page.hide === "function") {
