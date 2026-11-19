@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.9
+/* AVR Forge for Acode 0.1.10
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -86,7 +86,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.9</small>',
+      '<small>نسخه 0.1.10</small>',
       '</div>'
     ].join("");
   }
@@ -131,11 +131,7 @@
 
     let selected;
     try {
-      selected = await fileBrowser(
-        "folder",
-        "پوشه پروژه AVR را انتخاب کن",
-        true
-      );
+      selected = await fileBrowser("folder", "پوشه پروژه AVR را انتخاب کن", true);
     } catch (_) {
       return;
     }
@@ -149,42 +145,29 @@
     const folderUrl = String(selected.url).replace(/\/+$/, "");
     const mainCUrl = folderUrl + "/main.c";
 
-    // Load the project folder first so it becomes the active workspace.
     await Promise.resolve(openFolder(selected.url, {
       name: selected.name || "AVR Project",
       saveState: true,
       reloadOnResume: true
     }));
 
-    // Acode exposes its tab manager globally. Reuse an already-open main.c
-    // tab when possible instead of creating duplicate tabs.
-    const editorManager = window.editorManager || null;
-
+    const editorManager = window.editorManager;
     if (!editorManager) {
       throw new Error("مدیر تب‌های ویرایشگر Acode در دسترس نیست.");
     }
 
-    let editorFile = null;
-    if (typeof editorManager.getFile === "function") {
-      editorFile = editorManager.getFile(mainCUrl, "uri");
-    }
+    let editorFile = typeof editorManager.getFile === "function"
+      ? editorManager.getFile(mainCUrl, "uri")
+      : null;
 
     if (!editorFile) {
       const EditorFile = acode.require("editorFile");
       if (typeof EditorFile === "function") {
-        editorFile = new EditorFile("main.c", {
-          uri: mainCUrl,
-          render: true,
-          editable: true
-        });
+        editorFile = new EditorFile("main.c", { uri: mainCUrl, render: true });
       } else if (typeof acode.newEditorFile === "function") {
-        editorFile = acode.newEditorFile("main.c", {
-          uri: mainCUrl,
-          render: true,
-          editable: true
-        });
+        editorFile = acode.newEditorFile("main.c", { uri: mainCUrl, render: true });
       } else {
-        throw new Error("رابط EditorFile در این نسخه از Acode در دسترس نیست.");
+        throw new Error("رابط ساخت تب ویرایشگر در این نسخه از Acode در دسترس نیست.");
       }
     }
 
@@ -192,38 +175,37 @@
       throw new Error("تب main.c ساخته نشد یا شناسهٔ معتبری ندارد.");
     }
 
-    // Explicitly switch the editor manager to the target tab, then verify it.
-    if (typeof editorManager.switchFile === "function") {
-      editorManager.switchFile(editorFile.id);
-    } else if (typeof editorFile.makeActive === "function") {
-      editorFile.makeActive();
+    // Important: hide the plugin page FIRST. page.hide() returns Acode to
+    // its previous screen (often Plugin Settings), so switching before hide
+    // gets overridden by that navigation. Activate main.c after navigation.
+    if (page && typeof page.hide === "function") {
+      await Promise.resolve(page.hide());
     }
 
+    await new Promise(resolve => setTimeout(resolve, 180));
+
     let activated = false;
-    for (let attempt = 0; attempt < 30; attempt++) {
-      const active = editorManager.activeFile;
-      if (active && active.id === editorFile.id) {
-        activated = true;
-        break;
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
+    for (let attempt = 0; attempt < 20; attempt++) {
       if (typeof editorManager.switchFile === "function") {
         editorManager.switchFile(editorFile.id);
       } else if (typeof editorFile.makeActive === "function") {
         editorFile.makeActive();
       }
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const active = editorManager.activeFile;
+      if (active && active.id === editorFile.id) {
+        activated = true;
+        break;
+      }
     }
 
     if (!activated) {
-      throw new Error("فایل main.c ایجاد شد، اما Acode آن را به‌عنوان تب فعال نپذیرفت. صفحه افزونه باز می‌ماند.");
+      notify("AVR Forge", "صفحه افزونه بسته شد، اما فعال‌سازی تب main.c تأیید نشد.", "error");
+      return;
     }
 
-    // Hide the plugin page only after the editor confirms main.c is active.
-    if (page && typeof page.hide === "function") {
-      page.hide();
-    }
-
-    notify("AVR Forge", "تب main.c با موفقیت فعال شد.", "success");
+    notify("AVR Forge", "تب main.c فعال شد.", "success");
   }
 
   async function createProject() {
