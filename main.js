@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.14
+/* AVR Forge for Acode 0.1.15
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>پس از ساخت پروژه، ابزارهای AVR و make در ترمینال Alpine نصب می‌شوند.</p>',
-      '<small>نسخه 0.1.14</small>',
+      '<small>نسخه 0.1.15</small>',
       '</div>'
     ].join("");
   }
@@ -208,35 +208,39 @@
       throw new Error("API ترمینال Acode در دسترس نیست؛ ترمینال داخلی را فعال یا به‌روزرسانی کن.");
     }
 
-    notify("AVR Forge", "در حال آماده‌سازی ترمینال Alpine برای نصب ابزارهای AVR...", "info");
+    notify("AVR Forge", "در حال بررسی ابزارهای AVR در Alpine...", "info");
 
-    // createServer opens a visible Alpine terminal tab and runs the terminal
-    // installation flow first if the Alpine environment is not installed yet.
     const terminalInstance = await terminalApi.createServer({
       name: "AVR Toolchain Setup"
     });
 
     if (!terminalInstance || !terminalInstance.id) {
-      throw new Error("ترمینال Alpine ایجاد نشد؛ نصب ابزارهای AVR شروع نشد.");
+      throw new Error("ترمینال Alpine ایجاد نشد؛ بررسی ابزارهای AVR شروع نشد.");
     }
 
+    // Check package records and executables on every project creation.
+    // Only refresh indexes and install packages when at least one is missing.
     const command = [
       "set -e",
-      "echo '=== Updating Alpine package indexes ==='",
-      "apk update",
-      "echo '=== Installing AVR toolchain and GNU Make ==='",
-      "apk add --no-cache make gcc-avr avr-libc binutils-avr",
-      "echo '=== Verifying installation ==='",
+      "echo '=== Checking AVR toolchain packages ==='",
+      "if apk info -e make >/dev/null 2>&1 && apk info -e gcc-avr >/dev/null 2>&1 && apk info -e avr-libc >/dev/null 2>&1 && apk info -e binutils-avr >/dev/null 2>&1 && command -v avr-gcc >/dev/null 2>&1 && command -v avr-objcopy >/dev/null 2>&1 && command -v make >/dev/null 2>&1; then",
+      "  echo 'All AVR toolchain packages are already installed. Skipping installation.'",
+      "else",
+      "  echo 'One or more AVR tools are missing. Installing required packages...'",
+      "  apk update",
+      "  apk add --no-cache make gcc-avr avr-libc binutils-avr",
+      "fi",
+      "echo '=== Verifying AVR toolchain ==='",
       "avr-gcc --version | head -n 1",
       "avr-objcopy --version | head -n 1",
       "make --version | head -n 1",
-      "echo 'AVR toolchain installation completed successfully.'"
-    ].join(" && ");
+      "echo 'AVR toolchain check completed successfully.'"
+    ].join("\\n");
 
-    terminalApi.write(terminalInstance.id, command + "\r");
+    terminalApi.write(terminalInstance.id, command + "\\r");
     notify(
       "AVR Forge",
-      "فرمان نصب در ترمینال Alpine اجرا شد؛ خروجی و نتیجه را در تب AVR Toolchain Setup ببین.",
+      "بررسی ابزارهای AVR در تب AVR Toolchain Setup اجرا شد؛ اگر همه نصب باشند، نصب مجدد انجام نمی‌شود.",
       "success"
     );
     return true;
