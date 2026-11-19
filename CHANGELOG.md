@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.16
+- Keep setup output visible at a final prompt instead of letting the terminal close immediately.
+- Save complete setup output to `~/avr-forge-setup.log`.
+- Check all expected AVR commands and report final verification.
+
+
 ## 0.1.15
 - Check Alpine package records and required executables after every project creation.
 - Skip package installation when `make`, `gcc-avr`, `avr-libc`, `binutils-avr`, `avr-gcc`, and `avr-objcopy` are already present.
