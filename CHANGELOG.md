@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.12
+- Preserve the existing entry path: AVR Forge sidebar → plugin-specific settings → open AVR Forge.
+- On project open, hide the AVR Forge page first, then pop one settings navigation action.
+- Activate and verify the main.c tab only after navigation has settled.
+- Use Acode's documented EditorFile, EditorManager, Page, and Action Stack APIs.
+- Runtime behavior still requires verification on Acode 1.13.5.
+
+# Changelog
+
 ## 0.1.11
 - Detect launch from the plugin-specific Settings page.
 - Pop both the AVR Forge page and plugin Settings navigation layer before activating main.c.
