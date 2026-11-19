@@ -2,7 +2,7 @@
 
 AVR Forge is an Acode plugin project for creating AVR C firmware workspaces.
 
-## Current status — 0.1.5
+## Current status — 0.1.6
 
 This is an **early project-scaffolding release**, not the complete AVR IDE.
 
@@ -32,7 +32,7 @@ The generated Makefile is intended for a system where `avr-gcc`, AVR-LibC, GNU B
 
 Open the AVR Forge page. Choose “ساخت پروژه جدید”, enter a project name, select an MCU, and choose the parent folder.
 
-To open an existing project, choose “باز کردن پروژه موجود” and select its folder. Acode loads that folder into the sidebar file tree as the active workspace; select a source file there to open it in the editor.
+To open an existing project, choose “باز کردن پروژه موجود” and select its folder. Acode loads that folder into the sidebar file tree as the active workspace and automatically opens its `main.c` file in a new editor tab.
 
 The generated starter uses an 8 MHz clock definition. Change `F_CPU` to match your actual clock configuration.
 
@@ -42,7 +42,7 @@ The manifest currently declares Acode version code 958 or newer because the proj
 
 ## Development notes
 
-The plugin uses Acode's documented `setPluginInit`, `setPluginUnmount`, `fs`, `fileBrowser`, `openFolder`, `select`, and `prompt` APIs. It has not yet been device-tested; please treat this as an initial test build.
+The plugin uses Acode's documented `setPluginInit`, `setPluginUnmount`, `fs`, `fileBrowser`, `openFolder`, `editorFile`, `select`, and `prompt` APIs. It has not yet been device-tested; please treat this as an initial test build.
 
 ## License
 
