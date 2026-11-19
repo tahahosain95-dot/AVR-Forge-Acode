@@ -1,7 +1,7 @@
 {
   "id": "com.madarlab.avrforge",
   "name": "AVR Forge for Acode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "main.js",
   "readme": "README.md",
   "minVersionCode": 958,
