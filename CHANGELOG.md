@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.11
+- Detect launch from the plugin-specific Settings page.
+- Pop both the AVR Forge page and plugin Settings navigation layer before activating main.c.
+- Runtime behavior still requires verification on Acode 1.13.5.
+
 ## 0.1.10
 - Hide the plugin page before switching editor tabs, because page navigation can restore the previous Plugin Settings screen.
 - Activate and verify main.c after the plugin page is hidden.
