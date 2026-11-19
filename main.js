@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.12
+/* AVR Forge for Acode 0.1.13
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.12</small>',
+      '<small>نسخه 0.1.13</small>',
       '</div>'
     ].join("");
   }
@@ -126,29 +126,14 @@
     }
   }
 
-  async function openExistingProject() {
-    const fileBrowser = acode.require("fileBrowser");
+  async function openProjectFolder(folderUrl, projectName) {
     const openFolder = acode.require("openFolder");
+    let normalizedUrl = String(folderUrl);
+    while (normalizedUrl.endsWith("/")) normalizedUrl = normalizedUrl.slice(0, -1);
+    const mainCUrl = normalizedUrl + "/main.c";
 
-    let selected;
-    try {
-      selected = await fileBrowser("folder", "پوشه پروژه AVR را انتخاب کن", true);
-    } catch (_) {
-      return;
-    }
-
-    if (!selected || !selected.url) return;
-    if (selected.type && selected.type !== "folder") {
-      notify("AVR Forge", "لطفاً یک پوشه انتخاب کن.", "warning");
-      return;
-    }
-
-    let folderUrl = String(selected.url);
-    while (folderUrl.endsWith("/")) folderUrl = folderUrl.slice(0, -1);
-    const mainCUrl = folderUrl + "/main.c";
-
-    await Promise.resolve(openFolder(selected.url, {
-      name: selected.name || "AVR Project",
+    await Promise.resolve(openFolder(folderUrl, {
+      name: projectName || "AVR Project",
       saveState: true,
       reloadOnResume: true
     }));
@@ -168,9 +153,7 @@
       throw new Error("تب main.c ساخته نشد یا شناسهٔ معتبری ندارد.");
     }
 
-    // First close the plugin page. When launched from plugin settings,
-    // close the settings layer as well. Do this before activating the tab:
-    // Acode may restore the previous screen while navigation is unwinding.
+    // Keep the same navigation sequence used by the Open Existing Project action.
     if (page && typeof page.hide === "function") {
       page.hide();
     }
@@ -180,7 +163,6 @@
     if (launchedFromPluginSettings) {
       const actionStack = acode.require("actionStack");
       if (actionStack && typeof actionStack.pop === "function") {
-        // page.hide() handles the plugin page; pop only the settings layer.
         actionStack.pop();
       }
     }
@@ -206,7 +188,7 @@
 
     if (!activated) {
       notify("AVR Forge", "پروژه باز شد، اما فعال‌شدن تب main.c تأیید نشد.", "error");
-      return;
+      return false;
     }
 
     try {
@@ -216,6 +198,26 @@
     } catch (_) {}
 
     notify("AVR Forge", "پروژه باز شد و main.c فعال شد.", "success");
+    return true;
+  }
+
+  async function openExistingProject() {
+    const fileBrowser = acode.require("fileBrowser");
+
+    let selected;
+    try {
+      selected = await fileBrowser("folder", "پوشه پروژه AVR را انتخاب کن", true);
+    } catch (_) {
+      return;
+    }
+
+    if (!selected || !selected.url) return;
+    if (selected.type && selected.type !== "folder") {
+      notify("AVR Forge", "لطفاً یک پوشه انتخاب کن.", "warning");
+      return;
+    }
+
+    await openProjectFolder(selected.url, selected.name || "AVR Project");
   }
 
   async function createProject() {
@@ -255,7 +257,8 @@
       "This plugin version does not run the compiler inside Acode yet."
     ].join("\n") + "\n");
 
-    notify("AVR Forge", "پروژه ساخته شد: " + folderName, "success");
+    notify("AVR Forge", "پروژه ساخته شد؛ در حال باز کردن main.c...", "success");
+    await openProjectFolder(projectUrl, folderName);
   }
 
   function openPluginPage(fromSettings) {
