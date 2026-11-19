@@ -158,8 +158,7 @@
 
     // Acode exposes its tab manager globally. Reuse an already-open main.c
     // tab when possible instead of creating duplicate tabs.
-    const editorManager = window.editorManager ||
-      (typeof editorManager !== "undefined" ? editorManager : null);
+    const editorManager = window.editorManager || null;
 
     if (!editorManager) {
       throw new Error("مدیر تب‌های ویرایشگر Acode در دسترس نیست.");
