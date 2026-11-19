@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.11
+/* AVR Forge for Acode 0.1.12
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.11</small>',
+      '<small>نسخه 0.1.12</small>',
       '</div>'
     ].join("");
   }
@@ -143,7 +143,7 @@
       return;
     }
 
-    const folderUrl = String(selected.url).replace(/\/+$/, "");
+    const folderUrl = String(selected.url).replace(/\\/+$/, "");
     const mainCUrl = folderUrl + "/main.c";
 
     await Promise.resolve(openFolder(selected.url, {
@@ -157,49 +157,45 @@
       throw new Error("مدیر تب‌های ویرایشگر Acode در دسترس نیست.");
     }
 
-    let editorFile = typeof editorManager.getFile === "function"
-      ? editorManager.getFile(mainCUrl, "uri")
-      : null;
-
+    let editorFile = editorManager.getFile(mainCUrl, "uri");
     if (!editorFile) {
       const EditorFile = acode.require("editorFile");
-      if (typeof EditorFile === "function") {
-        editorFile = new EditorFile("main.c", { uri: mainCUrl, render: true });
-      } else if (typeof acode.newEditorFile === "function") {
-        editorFile = acode.newEditorFile("main.c", { uri: mainCUrl, render: true });
-      } else {
-        throw new Error("رابط ساخت تب ویرایشگر در این نسخه از Acode در دسترس نیست.");
-      }
+      editorFile = new EditorFile("main.c", { uri: mainCUrl, render: true });
     }
 
     if (!editorFile || !editorFile.id) {
       throw new Error("تب main.c ساخته نشد یا شناسهٔ معتبری ندارد.");
     }
 
-    // Settings launch has two navigation layers: plugin page + plugin settings.
-    // Pop both so Acode returns to the editor rather than plugin settings.
-    if (launchedFromPluginSettings) {
-      const actionStack = acode.require("actionStack");
-      if (!actionStack || typeof actionStack.pop !== "function") {
-        throw new Error("Acode actionStack API در دسترس نیست.");
-      }
-      actionStack.pop(2);
-    } else if (page && typeof page.hide === "function") {
+    // First close the plugin page. When launched from plugin settings,
+    // close the settings layer as well. Do this before activating the tab:
+    // Acode may restore the previous screen while navigation is unwinding.
+    if (page && typeof page.hide === "function") {
       page.hide();
     }
 
+    await new Promise(resolve => setTimeout(resolve, 180));
+
+    if (launchedFromPluginSettings) {
+      const actionStack = acode.require("actionStack");
+      if (actionStack && typeof actionStack.pop === "function") {
+        // page.hide() handles the plugin page; pop only the settings layer.
+        actionStack.pop();
+      }
+    }
+
     launchedFromPluginSettings = false;
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     let activated = false;
-    for (let attempt = 0; attempt < 20; attempt++) {
+    for (let attempt = 0; attempt < 25; attempt++) {
       if (typeof editorManager.switchFile === "function") {
         editorManager.switchFile(editorFile.id);
       } else if (typeof editorFile.makeActive === "function") {
         editorFile.makeActive();
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 120));
       const active = editorManager.activeFile;
       if (active && active.id === editorFile.id) {
         activated = true;
@@ -208,11 +204,17 @@
     }
 
     if (!activated) {
-      notify("AVR Forge", "صفحه افزونه بسته شد، اما فعال‌سازی تب main.c تأیید نشد.", "error");
+      notify("AVR Forge", "پروژه باز شد، اما فعال‌شدن تب main.c تأیید نشد.", "error");
       return;
     }
 
-    notify("AVR Forge", "تب main.c فعال شد.", "success");
+    try {
+      if (editorManager.editor && typeof editorManager.editor.focus === "function") {
+        editorManager.editor.focus();
+      }
+    } catch (_) {}
+
+    notify("AVR Forge", "پروژه باز شد و main.c فعال شد.", "success");
   }
 
   async function createProject() {
