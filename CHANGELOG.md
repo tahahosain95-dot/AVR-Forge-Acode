@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.14
+- After creating a project, open a visible Acode Alpine terminal tab.
+- Run `apk update` and install `make`, `gcc-avr`, `avr-libc`, and `binutils-avr`.
+- Verify AVR-GCC, AVR-Objcopy, and GNU Make versions in the terminal output.
+- Keep project creation successful even if terminal setup cannot start; show the setup error as a notification.
+
+
 ## 0.1.13
 - After creating a project and writing main.c, Makefile, and README.md, automatically open the new folder as the active Acode workspace.
 - Automatically open and activate the newly created main.c tab.
