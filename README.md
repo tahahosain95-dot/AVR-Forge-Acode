@@ -2,7 +2,7 @@
 
 AVR Forge is an Acode plugin project for creating AVR C firmware workspaces.
 
-## Current status — 0.1.8
+## Current status — 0.1.11
 
 This is an **early project-scaffolding release**, not the complete AVR IDE.
 
