@@ -1,9 +1,12 @@
 # Changelog
 
+## 0.1.6
+- When opening an existing project folder, activate it as the Acode workspace and open its main.c file in a new editor tab.
+- This release has not yet been runtime-tested on Acode 1.13.5.
+
 ## 0.1.5
 - Add an "Open existing project" button to the AVR Forge page.
-- Let the user choose a project folder and load it as an Acode workspace using the documented openFolder utility.
-- This release has not yet been runtime-tested on Acode 1.13.5.
+- Let the user choose a project folder and load it as an Acode workspace.
 
 ## 0.1.4
 - Add a plugin-specific settings entry to open the AVR Forge project page from the plugin manager.
