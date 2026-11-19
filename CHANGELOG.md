@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.15
+- Check Alpine package records and required executables after every project creation.
+- Skip package installation when `make`, `gcc-avr`, `avr-libc`, `binutils-avr`, `avr-gcc`, and `avr-objcopy` are already present.
+- Run `apk update` and install the required packages only if any component is missing.
+
+
 ## 0.1.14
 - After creating a project, open a visible Acode Alpine terminal tab.
 - Run `apk update` and install `make`, `gcc-avr`, `avr-libc`, and `binutils-avr`.
