@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.6
+/* AVR Forge for Acode 0.1.7
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -86,7 +86,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.6</small>',
+      '<small>نسخه 0.1.7</small>',
       '</div>'
     ].join("");
   }
@@ -159,15 +159,27 @@
     const mainCUrl = folderUrl + "/main.c";
     const EditorFile = acode.require("editorFile");
 
+    let editorFile;
     if (typeof EditorFile === "function") {
-      new EditorFile("main.c", { uri: mainCUrl, render: true });
+      editorFile = new EditorFile("main.c", { uri: mainCUrl, render: true });
     } else if (typeof acode.newEditorFile === "function") {
-      acode.newEditorFile("main.c", { uri: mainCUrl, render: true });
+      editorFile = acode.newEditorFile("main.c", { uri: mainCUrl, render: true });
     } else {
       throw new Error("Acode EditorFile API is not available in this version.");
     }
 
-    notify("AVR Forge", "پروژه باز شد و main.c در تب جدید قرار گرفت.", "success");
+    // Wait until the editor tab is registered, then activate it and hide AVR Forge.
+    await Promise.resolve(editorFile);
+    const editorManager = acode.require("editorManager");
+    if (editorManager && typeof editorManager.setActive === "function") {
+      editorManager.setActive(editorFile);
+    }
+
+    if (page && typeof page.hide === "function") {
+      page.hide();
+    }
+
+    notify("AVR Forge", "پروژه باز شد؛ صفحه افزونه بسته و main.c فعال شد.", "success");
   }
 
   async function createProject() {
