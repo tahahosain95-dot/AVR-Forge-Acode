@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.10
+/* AVR Forge for Acode 0.1.11
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -16,6 +16,7 @@
   let commandsApi = null;
   let sidebarApi = null;
   let page = null;
+  let launchedFromPluginSettings = false;
   let commandRegistered = false;
   let sidebarRegistered = false;
 
@@ -86,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.10</small>',
+      '<small>نسخه 0.1.11</small>',
       '</div>'
     ].join("");
   }
@@ -175,14 +176,20 @@
       throw new Error("تب main.c ساخته نشد یا شناسهٔ معتبری ندارد.");
     }
 
-    // Important: hide the plugin page FIRST. page.hide() returns Acode to
-    // its previous screen (often Plugin Settings), so switching before hide
-    // gets overridden by that navigation. Activate main.c after navigation.
-    if (page && typeof page.hide === "function") {
-      await Promise.resolve(page.hide());
+    // Settings launch has two navigation layers: plugin page + plugin settings.
+    // Pop both so Acode returns to the editor rather than plugin settings.
+    if (launchedFromPluginSettings) {
+      const actionStack = acode.require("actionStack");
+      if (!actionStack || typeof actionStack.pop !== "function") {
+        throw new Error("Acode actionStack API در دسترس نیست.");
+      }
+      actionStack.pop(2);
+    } else if (page && typeof page.hide === "function") {
+      page.hide();
     }
 
-    await new Promise(resolve => setTimeout(resolve, 180));
+    launchedFromPluginSettings = false;
+    await new Promise(resolve => setTimeout(resolve, 250));
 
     let activated = false;
     for (let attempt = 0; attempt < 20; attempt++) {
@@ -248,7 +255,8 @@
     notify("AVR Forge", "پروژه ساخته شد: " + folderName, "success");
   }
 
-  function openPluginPage() {
+  function openPluginPage(fromSettings) {
+    launchedFromPluginSettings = !!fromSettings;
     if (!page) {
       notify("AVR Forge", "صفحه افزونه هنوز آماده نیست.", "error");
       return;
@@ -319,7 +327,7 @@
     }],
     cb: function (key, value) {
       if (key === "open_avr_forge" && value === "open") {
-        openPluginPage();
+        openPluginPage(true);
       }
     }
   });
