@@ -1,19 +1,21 @@
-/* AVR Forge for Acode — initial project assistant.
- * Uses documented Acode plugin lifecycle and fs/fileBrowser APIs.
- * Compiler integration is intentionally not claimed in this initial release.
+/* AVR Forge for Acode — sidebar project assistant.
+ * Sidebar API: https://docs.acode.app/docs/interface-apis/sidebar-apps
  */
 (function () {
   "use strict";
 
   const PLUGIN_ID = "com.madarlab.avrforge";
+  const SIDEBAR_ID = "avr-forge-sidebar";
   const MCUS = [
     "atmega16", "atmega16a", "atmega32", "atmega8",
     "atmega328p", "atmega328pb", "atmega168", "atmega128",
     "atmega2560", "attiny13", "attiny85", "attiny2313"
   ];
 
-  let commands;
+  let commands = null;
+  let sideBarApps = null;
   let commandAdded = false;
+  let sidebarAdded = false;
 
   function notify(title, message, type) {
     if (window.acode && acode.pushNotification) {
@@ -24,7 +26,9 @@
   }
 
   function safeName(value) {
-    return String(value || "avr-project").trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "avr-project";
+    return String(value || "avr-project").trim()
+      .replace(/[^a-zA-Z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "avr-project";
   }
 
   function mainC(mcu) {
@@ -105,17 +109,17 @@
       "",
       "`make` creates `main.hex`; `make clean` removes generated build files.",
       "",
-      "AVR Forge 0.1.0 does not yet execute the compiler from inside Acode."
+      "AVR Forge 0.1.1 does not yet execute the compiler from inside Acode."
     ].join("\n") + "\n");
 
     notify("AVR Forge", "Project created: " + folderName + "\nMCU: " + mcu + "\nFiles: main.c, Makefile, README.md", "success");
   }
 
-  async function showPanel($page) {
-    $page.innerHTML = [
-      '<div class="avr-forge" style="padding:16px;overflow:auto;">',
+  function renderPanel(container) {
+    container.innerHTML = [
+      '<div class="avr-forge scroll" style="padding:16px;max-height:100%;overflow-y:auto;">',
       '<h2>AVR Forge</h2>',
-      '<p>ابزار اولیه ساخت پروژه AVR در Acode</p>',
+      '<p>ابزار ساخت پروژه AVR در Acode</p>',
       '<button id="avr-new-project" class="btn">ساخت پروژه جدید</button>',
       '<hr>',
       '<h3>وضعیت قابلیت‌ها</h3>',
@@ -125,40 +129,79 @@
       '<li>کامپایل AVR-GCC و تولید HEX از داخل افزونه: هنوز پیاده‌سازی نشده</li>',
       '<li>هایلایت اختصاصی و تکمیل خودکار رجیسترها: در نسخه بعدی</li>',
       '</ul>',
-      '<p style="opacity:.75;font-size:12px">نسخه 0.1.0 — این نسخه برای آزمایش API و ساختار پروژه است.</p>',
+      '<p style="opacity:.75;font-size:12px">نسخه 0.1.1 — پنل از نوار کناری باز می‌شود.</p>',
       '</div>'
     ].join("");
 
-    const button = $page.querySelector("#avr-new-project");
+    const button = container.querySelector("#avr-new-project");
     button.addEventListener("click", async function () {
+      button.disabled = true;
       try {
         await createProject();
       } catch (error) {
         console.error("[AVR Forge]", error);
         notify("AVR Forge error", error && error.message ? error.message : String(error), "error");
+      } finally {
+        button.disabled = false;
       }
     });
-    $page.show();
   }
 
   if (!window.acode) return;
 
-  acode.setPluginInit(PLUGIN_ID, async function (_baseUrl, $page) {
-    commands = acode.require("commands");
-    commands.addCommand({
-      name: "avr-forge-open",
-      description: "Open AVR Forge",
-      exec: function () { showPanel($page); }
-    });
-    commandAdded = true;
-    notify("AVR Forge", "افزونه بارگذاری شد. از Command Palette فرمان AVR Forge را اجرا کن.", "success");
+  acode.setPluginInit(PLUGIN_ID, async function () {
+    // Add a persistent one-tap entry to Acode's sidebar.
+    sideBarApps = acode.require("sidebarApps");
+    if (!sideBarApps || typeof sideBarApps.add !== "function") {
+      throw new Error("این نسخه Acode از Sidebar Apps API پشتیبانی نمی‌کند.");
+    }
+
+    sideBarApps.add(
+      "icon-code",
+      SIDEBAR_ID,
+      "AVR Forge",
+      function (container) {
+        renderPanel(container);
+      },
+      false,
+      function (container) {
+        // Keep the sidebar panel ready whenever the user selects it.
+        if (!container.querySelector("#avr-new-project")) renderPanel(container);
+      }
+    );
+    sidebarAdded = true;
+
+    // Keep the command as an optional alternative entry point.
+    try {
+      commands = acode.require("commands");
+      if (commands && typeof commands.addCommand === "function") {
+        commands.addCommand({
+          name: "avr-forge-open",
+          description: "Open AVR Forge",
+          exec: function () {
+            const panel = sideBarApps.get(SIDEBAR_ID);
+            if (panel && typeof panel.show === "function") panel.show();
+          }
+        });
+        commandAdded = true;
+      }
+    } catch (error) {
+      console.warn("[AVR Forge] Optional command registration skipped:", error);
+    }
+
+    notify("AVR Forge", "آیکون افزونه به نوار کناری اضافه شد.", "success");
   });
 
   acode.setPluginUnmount(PLUGIN_ID, function () {
     if (commandAdded && commands) {
       try { commands.removeCommand("avr-forge-open"); } catch (_) {}
     }
+    if (sidebarAdded && sideBarApps) {
+      try { sideBarApps.remove(SIDEBAR_ID); } catch (_) {}
+    }
     commandAdded = false;
+    sidebarAdded = false;
     commands = null;
+    sideBarApps = null;
   });
 })();
