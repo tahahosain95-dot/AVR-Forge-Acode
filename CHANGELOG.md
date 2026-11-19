@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.13
+- After creating a project and writing main.c, Makefile, and README.md, automatically open the new folder as the active Acode workspace.
+- Automatically open and activate the newly created main.c tab.
+- Reuse the same project-opening routine for both Create Project and Open Existing Project.
+
+# Changelog
+
 ## 0.1.12
 - Preserve the existing entry path: AVR Forge sidebar → plugin-specific settings → open AVR Forge.
 - On project open, hide the AVR Forge page first, then pop one settings navigation action.
