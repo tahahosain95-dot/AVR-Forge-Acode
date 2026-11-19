@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10
+- Hide the plugin page before switching editor tabs, because page navigation can restore the previous Plugin Settings screen.
+- Activate and verify main.c after the plugin page is hidden.
+- Runtime behavior still requires testing on the target Acode device.
+
 ## 0.1.9
 - Reuse an already-open main.c tab when possible.
 - Switch to main.c through Acode's EditorManager and verify the active tab before hiding the plugin page.
