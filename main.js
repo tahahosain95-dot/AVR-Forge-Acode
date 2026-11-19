@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.4
+/* AVR Forge for Acode 0.1.5
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -82,10 +82,11 @@
       '<h2>AVR Forge</h2>',
       '<p>ابزار ساخت پروژه AVR برای Acode</p>',
       '<button id="avr-forge-create" class="btn">ساخت پروژه جدید</button>',
+      '<button id="avr-forge-open-project" class="btn" style="margin-top:10px;">باز کردن پروژه موجود</button>',
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.4</small>',
+      '<small>نسخه 0.1.5</small>',
       '</div>'
     ].join("");
   }
@@ -93,20 +94,67 @@
   function renderPanel(container) {
     if (!container) return;
     container.innerHTML = panelHtml();
-    const button = container.querySelector("#avr-forge-create");
-    if (button) {
-      button.addEventListener("click", async function () {
-        button.disabled = true;
+    const createButton = container.querySelector("#avr-forge-create");
+    if (createButton) {
+      createButton.addEventListener("click", async function () {
+        createButton.disabled = true;
         try {
           await createProject();
         } catch (error) {
           console.error("[AVR Forge] createProject:", error);
           notify("AVR Forge", error && error.message ? error.message : String(error), "error");
         } finally {
-          button.disabled = false;
+          createButton.disabled = false;
         }
       });
     }
+
+    const openButton = container.querySelector("#avr-forge-open-project");
+    if (openButton) {
+      openButton.addEventListener("click", async function () {
+        openButton.disabled = true;
+        try {
+          await openExistingProject();
+        } catch (error) {
+          console.error("[AVR Forge] openExistingProject:", error);
+          notify("AVR Forge", error && error.message ? error.message : String(error), "error");
+        } finally {
+          openButton.disabled = false;
+        }
+      });
+    }
+  }
+
+  async function openExistingProject() {
+    const fileBrowser = acode.require("fileBrowser");
+    const openFolder = acode.require("openFolder");
+
+    let selected;
+    try {
+      selected = await fileBrowser(
+        "folder",
+        "پوشه پروژه AVR را انتخاب کن",
+        true
+      );
+    } catch (_) {
+      return;
+    }
+
+    if (!selected || !selected.url) return;
+    if (selected.type && selected.type !== "folder") {
+      notify("AVR Forge", "لطفاً یک پوشه انتخاب کن.", "warning");
+      return;
+    }
+
+    // Acode's openFolder utility loads the selected directory as the active
+    // workspace in the editor's sidebar file tree.
+    openFolder(selected.url, {
+      name: selected.name || "AVR Project",
+      saveState: true,
+      reloadOnResume: true
+    });
+
+    notify("AVR Forge", "پروژه در فهرست فایل‌های Acode باز شد.", "success");
   }
 
   async function createProject() {
