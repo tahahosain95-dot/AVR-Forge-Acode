@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+- Add a plugin-specific settings entry to open the AVR Forge project page from the plugin manager.
+- Keep the Command Palette and sidebar entry as alternate launch paths.
+- This release has not yet been runtime-tested on Acode 1.13.5.
+
+
 ## 0.1.3
 - Fix command execution so the plugin page is rendered before it is shown.
 - Register the Command Palette command before optional sidebar setup.
