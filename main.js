@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.3
+/* AVR Forge for Acode 0.1.4
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -85,7 +85,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>کامپایل AVR-GCC و تولید HEX هنوز در این نسخه فعال نیست.</p>',
-      '<small>نسخه 0.1.3</small>',
+      '<small>نسخه 0.1.4</small>',
       '</div>'
     ].join("");
   }
@@ -209,6 +209,19 @@
         : "افزونه بارگذاری شد، اما ثبت دستور ناموفق بود.",
       commandRegistered ? "success" : "warning"
     );
+  }, {
+    list: [{
+      key: "open_avr_forge",
+      text: "باز کردن صفحه ساخت پروژه",
+      icon: "icon-code",
+      info: "برای ورود به محیط AVR Forge این گزینه را انتخاب کن.",
+      value: "open",
+      select: [["open", "باز کردن AVR Forge"]],
+      cb: function () {
+        // Plugin settings are the supported entry point exposed by Acode's plugin manager.
+        openPluginPage();
+      }
+    }]
   });
 
   acode.setPluginUnmount(PLUGIN_ID, function () {
