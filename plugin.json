@@ -1,7 +1,7 @@
 {
   "id": "com.madarlab.avrforge",
   "name": "AVR Forge for Acode",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "main": "main.js",
   "readme": "README.md",
   "minVersionCode": 958,
@@ -17,5 +17,12 @@
   "author": {
     "name": "AVR Forge contributors",
     "github": "tahahosain95-dot"
-  }
+  },
+  "files": [
+    "assets/toolchain/aarch64/gcc-avr-14.2.0-r1.apk",
+    "assets/toolchain/aarch64/avr-libc-2.2.1-r0.apk",
+    "assets/toolchain/aarch64/binutils-avr-2.42-r1.apk",
+    "assets/toolchain/aarch64/make-4.4.1-r2.apk",
+    "assets/toolchain/aarch64/avrdude-8.0-r1.apk"
+  ]
 }
