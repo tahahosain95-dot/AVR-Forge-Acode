@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.18
+- Check readable CA certificate bundle candidates and APK file permissions before updating indexes.
+- Retry APK index refresh once with a short delay.
+- Show troubleshooting hints for permission/TLS/network errors without weakening repository security.
+
+
 ## 0.1.17
 - Use a plugin-owned writable APK cache directory to mitigate cache permission errors.
 - Stream setup output to the terminal and save a log.
