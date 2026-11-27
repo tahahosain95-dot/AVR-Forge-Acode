@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.17
+- Use a plugin-owned writable APK cache directory to mitigate cache permission errors.
+- Stream setup output to the terminal and save a log.
+- Report detected architecture, final verification, and installation failure more accurately.
+- Preserve APK installation failure status rather than always showing exit code 0.
+
+
 ## 0.1.16
 - Keep setup output visible at a final prompt instead of letting the terminal close immediately.
 - Save complete setup output to `~/avr-forge-setup.log`.
