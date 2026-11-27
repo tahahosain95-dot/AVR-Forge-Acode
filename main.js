@@ -241,13 +241,14 @@
       'if command -v make >/dev/null 2>&1; then make --version | head -n 1; fi',
       'if [ "$VERIFY_MISSING" -ne 0 ]; then echo "RESULT: FAILED - required tools remain missing"; [ "$INSTALL_STATUS" -ne 0 ] && echo "APK exit code: $INSTALL_STATUS"; else echo "RESULT: SUCCESS - required tools verified"; INSTALL_STATUS=0; fi',
       'echo "Setup finished"',
+      'echo "Setup exit code: $INSTALL_STATUS"',
       'echo "Full log: $LOG"',
       'echo "Press Enter to close this setup output."',
       'read -r AVR_FORGE_PAUSE',
       'exit "$INSTALL_STATUS"'
     ].join("\n");
-    const wrapped = 'LOG="$HOME/avr-forge-setup.log"; CACHE_DIR="$HOME/.cache/avr-forge-apk"; mkdir -p "$CACHE_DIR"; {\n' +
-      command.replace(/\\n/g, "\n") +
+    const wrapped = 'set -o pipefail; LOG="$HOME/avr-forge-setup.log"; CACHE_DIR="$HOME/.cache/avr-forge-apk"; mkdir -p "$CACHE_DIR"; {\n' +
+      command +
       '\n} 2>&1 | tee "$LOG"';
     terminalApi.write(terminalInstance.id, wrapped + "\r");
     notify("AVR Forge", "نصب‌کننده جدید با cache قابل‌نوشتن و گزارش زنده در تب AVR Toolchain Setup اجرا شد.", "info");
