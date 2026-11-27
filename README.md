@@ -2,7 +2,7 @@
 
 AVR Forge is an Acode plugin project for creating AVR C firmware workspaces.
 
-## Current status — 0.1.18
+## Current status — 0.1.19
 
 This is an **early project-scaffolding release**, not the complete AVR IDE.
 
@@ -21,6 +21,10 @@ Not implemented yet:
 - Bundled compiler toolchain.
 
 After each project creation, AVR Forge opens the built-in Alpine terminal and checks package records and required executables. If missing, it refreshes APK indexes and installs packages using a plugin-owned writable cache at `~/.cache/avr-forge-apk`, avoiding reliance on the default APK cache directory. Setup output is streamed to the terminal and saved to `~/avr-forge-setup.log`. The installer reports the detected APK architecture, preserves the APK failure code, performs final command verification, checks for readable CA certificate bundles and APK permissions, and retries APK index updates once. It never disables HTTPS verification or package signature checks. Internet access is needed only when installation is required. Runtime behavior still requires testing on the target Acode device.
+
+## Offline ARM64 toolchain files
+
+Before building the plugin ZIP, place the five APK files in `assets/toolchain/aarch64/` using the exact filenames listed above. The ZIP must preserve this folder structure. The current installer supports Alpine `aarch64` only; other architectures are not supported in this release.
 
 ## Install
 
