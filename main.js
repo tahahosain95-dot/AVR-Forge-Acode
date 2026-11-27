@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.16
+/* AVR Forge for Acode 0.1.17
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>پس از ساخت پروژه، ابزارهای AVR و make در ترمینال Alpine نصب می‌شوند.</p>',
-      '<small>نسخه 0.1.16</small>',
+      '<small>نسخه 0.1.17</small>',
       '</div>'
     ].join("");
   }
@@ -206,37 +206,51 @@
     if (!terminalApi || typeof terminalApi.createServer !== "function" || typeof terminalApi.write !== "function") {
       throw new Error("API ترمینال Acode در دسترس نیست؛ ترمینال داخلی را فعال یا به‌روزرسانی کن.");
     }
-    notify("AVR Forge", "در حال بررسی ابزارهای AVR در Alpine...", "info");
+    notify("AVR Forge", "در حال بررسی و آماده‌سازی ابزارهای AVR...", "info");
     const terminalInstance = await terminalApi.createServer({ name: "AVR Toolchain Setup" });
     if (!terminalInstance || !terminalInstance.id) throw new Error("ترمینال Alpine ایجاد نشد.");
+
     const command = [
       'LOG="$HOME/avr-forge-setup.log"',
-      "{",
-      "  echo AVR Forge toolchain setup",
-      "  echo Checking required packages and commands",
-      "  MISSING=0",
-      '  for pkg in make gcc-avr avr-libc binutils-avr; do if apk info -e "$pkg" >/dev/null 2>&1; then echo "[OK] package: $pkg"; else echo "[MISSING] package: $pkg"; MISSING=1; fi; done',
-      '  for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] command: $cmd"; else echo "[MISSING] command: $cmd"; MISSING=1; fi; done',
-      '  if [ "$MISSING" -ne 0 ]; then',
-      "    echo Installing missing AVR packages",
-      "    apk update && apk add --no-cache make gcc-avr avr-libc binutils-avr || echo INSTALLATION_FAILED",
-      "  else",
-      "    echo All required tools are installed; skipping installation.",
-      "  fi",
-      "  echo Final verification",
-      '  for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do command -v "$cmd" >/dev/null 2>&1 && echo "[OK] $cmd" || echo "[MISSING] $cmd"; done',
-      '  command -v avr-gcc >/dev/null 2>&1 && avr-gcc --version | head -n 1',
-      "  echo Setup process finished",
-      '} > "$LOG" 2>&1',
-      'STATUS=$?',
-      'cat "$LOG"',
-      'echo "Setup exit code: $STATUS"',
+      'CACHE_DIR="$HOME/.cache/avr-forge-apk"',
+      'mkdir -p "$CACHE_DIR" || { echo "ERROR: Cannot create writable APK cache: $CACHE_DIR"; exit 2; }',
+      'echo "AVR Forge toolchain setup v0.1.17"',
+      'echo "Detected architecture: $(apk --print-arch 2>/dev/null || uname -m)"',
+      'echo "Using user cache: $CACHE_DIR"',
+      'echo "Checking required packages and commands"',
+      'MISSING=0',
+      'for pkg in make gcc-avr avr-libc binutils-avr; do if apk info -e "$pkg" >/dev/null 2>&1; then echo "[OK] package: $pkg"; else echo "[MISSING] package: $pkg"; MISSING=1; fi; done',
+      'for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] command: $cmd"; else echo "[MISSING] command: $cmd"; MISSING=1; fi; done',
+      'INSTALL_STATUS=0',
+      'if [ "$MISSING" -ne 0 ]; then',
+      '  echo "Refreshing APK indexes using writable cache..."',
+      '  apk --cache-dir "$CACHE_DIR" update || INSTALL_STATUS=$?',
+      '  if [ "$INSTALL_STATUS" -eq 0 ]; then',
+      '    echo "Installing AVR packages..."',
+      '    apk --cache-dir "$CACHE_DIR" add --no-cache make gcc-avr avr-libc binutils-avr || INSTALL_STATUS=$?',
+      '  else',
+      '    echo "ERROR: apk update failed (exit $INSTALL_STATUS); package installation skipped."',
+      '  fi',
+      'else',
+      '  echo "All required tools are installed; skipping installation."',
+      'fi',
+      'echo "Final verification"',
+      'VERIFY_MISSING=0',
+      'for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] $cmd"; else echo "[MISSING] $cmd"; VERIFY_MISSING=1; fi; done',
+      'if command -v avr-gcc >/dev/null 2>&1; then avr-gcc --version | head -n 1; fi',
+      'if command -v make >/dev/null 2>&1; then make --version | head -n 1; fi',
+      'if [ "$VERIFY_MISSING" -ne 0 ]; then echo "RESULT: FAILED - required tools remain missing"; [ "$INSTALL_STATUS" -ne 0 ] && echo "APK exit code: $INSTALL_STATUS"; else echo "RESULT: SUCCESS - required tools verified"; INSTALL_STATUS=0; fi',
+      'echo "Setup finished"',
       'echo "Full log: $LOG"',
-      "echo Press Enter when you have finished reading this output.",
-      "read -r AVR_FORGE_PAUSE"
+      'echo "Press Enter to close this setup output."',
+      'read -r AVR_FORGE_PAUSE',
+      'exit "$INSTALL_STATUS"'
     ].join("\n");
-    terminalApi.write(terminalInstance.id, command + "\r");
-    notify("AVR Forge", "خروجی در تب AVR Toolchain Setup می‌ماند و در ~/avr-forge-setup.log ذخیره می‌شود.", "success");
+    const wrapped = 'LOG="$HOME/avr-forge-setup.log"; CACHE_DIR="$HOME/.cache/avr-forge-apk"; mkdir -p "$CACHE_DIR"; {\n' +
+      command.replace(/\\n/g, "\n") +
+      '\n} 2>&1 | tee "$LOG"';
+    terminalApi.write(terminalInstance.id, wrapped + "\r");
+    notify("AVR Forge", "نصب‌کننده جدید با cache قابل‌نوشتن و گزارش زنده در تب AVR Toolchain Setup اجرا شد.", "info");
     return true;
   }
   async function openExistingProject() {
