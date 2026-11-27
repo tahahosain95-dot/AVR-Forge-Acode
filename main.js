@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.17
+/* AVR Forge for Acode 0.1.18
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>پس از ساخت پروژه، ابزارهای AVR و make در ترمینال Alpine نصب می‌شوند.</p>',
-      '<small>نسخه 0.1.17</small>',
+      '<small>نسخه 0.1.18</small>',
       '</div>'
     ].join("");
   }
@@ -214,7 +214,7 @@
       'LOG="$HOME/avr-forge-setup.log"',
       'CACHE_DIR="$HOME/.cache/avr-forge-apk"',
       'mkdir -p "$CACHE_DIR" || { echo "ERROR: Cannot create writable APK cache: $CACHE_DIR"; exit 2; }',
-      'echo "AVR Forge toolchain setup v0.1.17"',
+      'echo "AVR Forge toolchain setup v0.1.18"',
       'echo "Detected architecture: $(apk --print-arch 2>/dev/null || uname -m)"',
       'echo "Using user cache: $CACHE_DIR"',
       'echo "Checking required packages and commands"',
@@ -223,13 +223,28 @@
       'for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] command: $cmd"; else echo "[MISSING] command: $cmd"; MISSING=1; fi; done',
       'INSTALL_STATUS=0',
       'if [ "$MISSING" -ne 0 ]; then',
-      '  echo "Refreshing APK indexes using writable cache..."',
-      '  apk --cache-dir "$CACHE_DIR" update || INSTALL_STATUS=$?',
+      '  echo "Checking CA certificate files and APK database access..."',
+      '  for cert in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /usr/lib/ssl/cert.pem; do if [ -r "$cert" ]; then echo "[OK] readable CA bundle: $cert"; fi; done',
+      '  if [ ! -r /etc/apk/repositories ]; then echo "[ERROR] APK repositories file is not readable"; INSTALL_STATUS=2; fi',
+      '  if [ ! -w /lib/apk/db ] && [ ! -w /var/lib/apk ]; then echo "[WARNING] APK database may not be writable (check terminal permissions/root)"; fi',
+      '  if [ "$INSTALL_STATUS" -eq 0 ]; then',
+      '    echo "Refreshing APK indexes (up to 2 attempts)..."',
+      '    APK_UPDATE_TRY=1',
+      '    while [ "$APK_UPDATE_TRY" -le 2 ]; do',
+      '      echo "apk update attempt $APK_UPDATE_TRY"',
+      '      apk --cache-dir "$CACHE_DIR" update && INSTALL_STATUS=0 && break',
+      '      INSTALL_STATUS=$?',
+      '      if [ "$APK_UPDATE_TRY" -lt 2 ]; then echo "Update failed; waiting 3 seconds before retry..."; sleep 3; fi',
+      '      APK_UPDATE_TRY=$((APK_UPDATE_TRY + 1))',
+      '    done',
+      '  fi',
       '  if [ "$INSTALL_STATUS" -eq 0 ]; then',
       '    echo "Installing AVR packages..."',
       '    apk --cache-dir "$CACHE_DIR" add --no-cache make gcc-avr avr-libc binutils-avr || INSTALL_STATUS=$?',
       '  else',
-      '    echo "ERROR: apk update failed (exit $INSTALL_STATUS); package installation skipped."',
+      '    echo "ERROR: apk update failed (exit $INSTALL_STATUS); installation skipped."',
+      '    echo "Hint: Permission denied may indicate CA/TLS verification, restricted APK database/cache permissions, or network interception."',
+      '    echo "AVR Forge will not switch repositories to insecure HTTP or disable signature checks."',
       '  fi',
       'else',
       '  echo "All required tools are installed; skipping installation."',
