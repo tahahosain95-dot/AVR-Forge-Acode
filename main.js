@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.18
+/* AVR Forge for Acode 0.1.19
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -86,8 +86,8 @@
       '<button id="avr-forge-open-project" class="btn" style="margin-top:10px;">باز کردن پروژه موجود</button>',
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
-      '<p>پس از ساخت پروژه، ابزارهای AVR و make در ترمینال Alpine نصب می‌شوند.</p>',
-      '<small>نسخه 0.1.18</small>',
+      '<p>پس از ساخت پروژه، بسته‌های AVR همراه پلاگین به‌صورت آفلاین در Alpine نصب می‌شوند.</p>',
+      '<small>نسخه 0.1.19</small>',
       '</div>'
     ].join("");
   }
@@ -201,74 +201,90 @@
     return true;
   }
 
+  let pluginBaseUrl = "";
+
+  function getTerminalFilesDir() {
+    return new Promise((resolve, reject) => {
+      if (!window.system || typeof window.system.getFilesDir !== "function") {
+        reject(new Error("مسیر فایل‌های ترمینال Acode در دسترس نیست."));
+        return;
+      }
+      window.system.getFilesDir(resolve, reject);
+    });
+  }
+
+  async function copyBundledToolchainToTerminal() {
+    const filesDir = await getTerminalFilesDir();
+    const publicUrl = "file://" + String(filesDir).replace(/\/$/, "") + "/public";
+    const targetUrl = publicUrl + "/avr-forge-toolchain";
+    const publicDir = acode.fsOperation(publicUrl);
+    if (!(await publicDir.exists())) {
+      throw new Error("پوشه Public ترمینال Acode پیدا نشد. ابتدا ترمینال Alpine را یک‌بار باز کن.");
+    }
+    const targetDir = acode.fsOperation(targetUrl);
+    if (!(await targetDir.exists())) await publicDir.createDirectory("avr-forge-toolchain");
+
+    const packageFiles = [
+      "gcc-avr-14.2.0-r1.apk",
+      "avr-libc-2.2.1-r0.apk",
+      "binutils-avr-2.42-r1.apk",
+      "make-4.4.1-r2.apk",
+      "avrdude-8.0-r1.apk"
+    ];
+    const assetBase = pluginBaseUrl + "assets/toolchain/aarch64/";
+    for (const filename of packageFiles) {
+      const response = await fetch(assetBase + filename);
+      if (!response.ok) throw new Error("فایل داخل ZIP پلاگین پیدا نشد: assets/toolchain/aarch64/" + filename);
+      const data = await response.arrayBuffer();
+      if (!data || data.byteLength < 100) throw new Error("فایل بسته ناقص یا خالی است: " + filename);
+      await acode.fsOperation(targetUrl + "/" + filename).writeFile(data);
+    }
+    return "/public/avr-forge-toolchain";
+  }
+
   async function installAvrToolchain() {
     const terminalApi = acode.require("terminal");
     if (!terminalApi || typeof terminalApi.createServer !== "function" || typeof terminalApi.write !== "function") {
       throw new Error("API ترمینال Acode در دسترس نیست؛ ترمینال داخلی را فعال یا به‌روزرسانی کن.");
     }
-    notify("AVR Forge", "در حال بررسی و آماده‌سازی ابزارهای AVR...", "info");
-    const terminalInstance = await terminalApi.createServer({ name: "AVR Toolchain Setup" });
+    notify("AVR Forge", "در حال آماده‌سازی بسته‌های آفلاین همراه پلاگین...", "info");
+    const packageDir = await copyBundledToolchainToTerminal();
+    const terminalInstance = await terminalApi.createServer({ name: "AVR Offline Toolchain" });
     if (!terminalInstance || !terminalInstance.id) throw new Error("ترمینال Alpine ایجاد نشد.");
 
     const command = [
+      'set -o pipefail',
       'LOG="$HOME/avr-forge-setup.log"',
-      'CACHE_DIR="$HOME/.cache/avr-forge-apk"',
-      'mkdir -p "$CACHE_DIR" || { echo "ERROR: Cannot create writable APK cache: $CACHE_DIR"; exit 2; }',
-      'echo "AVR Forge toolchain setup v0.1.18"',
-      'echo "Detected architecture: $(apk --print-arch 2>/dev/null || uname -m)"',
-      'echo "Using user cache: $CACHE_DIR"',
-      'echo "Checking required packages and commands"',
-      'MISSING=0',
-      'for pkg in make gcc-avr avr-libc binutils-avr; do if apk info -e "$pkg" >/dev/null 2>&1; then echo "[OK] package: $pkg"; else echo "[MISSING] package: $pkg"; MISSING=1; fi; done',
-      'for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] command: $cmd"; else echo "[MISSING] command: $cmd"; MISSING=1; fi; done',
-      'INSTALL_STATUS=0',
-      'if [ "$MISSING" -ne 0 ]; then',
-      '  echo "Checking CA certificate files and APK database access..."',
-      '  for cert in /etc/ssl/certs/ca-certificates.crt /etc/ssl/cert.pem /usr/lib/ssl/cert.pem; do if [ -r "$cert" ]; then echo "[OK] readable CA bundle: $cert"; fi; done',
-      '  if [ ! -r /etc/apk/repositories ]; then echo "[ERROR] APK repositories file is not readable"; INSTALL_STATUS=2; fi',
-      '  if [ ! -w /lib/apk/db ] && [ ! -w /var/lib/apk ]; then echo "[WARNING] APK database may not be writable (check terminal permissions/root)"; fi',
-      '  if [ "$INSTALL_STATUS" -eq 0 ]; then',
-      '    echo "Refreshing APK indexes (up to 2 attempts)..."',
-      '    APK_UPDATE_TRY=1',
-      '    while [ "$APK_UPDATE_TRY" -le 2 ]; do',
-      '      echo "apk update attempt $APK_UPDATE_TRY"',
-      '      apk --cache-dir "$CACHE_DIR" update && INSTALL_STATUS=0 && break',
-      '      INSTALL_STATUS=$?',
-      '      if [ "$APK_UPDATE_TRY" -lt 2 ]; then echo "Update failed; waiting 3 seconds before retry..."; sleep 3; fi',
-      '      APK_UPDATE_TRY=$((APK_UPDATE_TRY + 1))',
-      '    done',
-      '  fi',
-      '  if [ "$INSTALL_STATUS" -eq 0 ]; then',
-      '    echo "Installing AVR packages..."',
-      '    apk --cache-dir "$CACHE_DIR" add --no-cache make gcc-avr avr-libc binutils-avr || INSTALL_STATUS=$?',
-      '  else',
-      '    echo "ERROR: apk update failed (exit $INSTALL_STATUS); installation skipped."',
-      '    echo "Hint: Permission denied may indicate CA/TLS verification, restricted APK database/cache permissions, or network interception."',
-      '    echo "AVR Forge will not switch repositories to insecure HTTP or disable signature checks."',
-      '  fi',
-      'else',
-      '  echo "All required tools are installed; skipping installation."',
-      'fi',
-      'echo "Final verification"',
-      'VERIFY_MISSING=0',
-      'for cmd in make avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld; do if command -v "$cmd" >/dev/null 2>&1; then echo "[OK] $cmd"; else echo "[MISSING] $cmd"; VERIFY_MISSING=1; fi; done',
-      'if command -v avr-gcc >/dev/null 2>&1; then avr-gcc --version | head -n 1; fi',
-      'if command -v make >/dev/null 2>&1; then make --version | head -n 1; fi',
-      'if [ "$VERIFY_MISSING" -ne 0 ]; then echo "RESULT: FAILED - required tools remain missing"; [ "$INSTALL_STATUS" -ne 0 ] && echo "APK exit code: $INSTALL_STATUS"; else echo "RESULT: SUCCESS - required tools verified"; INSTALL_STATUS=0; fi',
-      'echo "Setup finished"',
-      'echo "Setup exit code: $INSTALL_STATUS"',
-      'echo "Full log: $LOG"',
+      'APK_DIR="' + packageDir + '"',
+      'mkdir -p "$HOME/.cache/avr-forge"',
+      '{',
+      'echo "AVR Forge offline toolchain setup v0.1.19"',
+      'echo "Architecture: $(apk --print-arch 2>/dev/null || uname -m)"',
+      'echo "Package directory: $APK_DIR"',
+      'if [ "$(apk --print-arch 2>/dev/null)" != "aarch64" ]; then echo "ERROR: This bundled toolchain is for aarch64 only."; exit 10; fi',
+      'MISSING_FILES=0',
+      'for f in gcc-avr-14.2.0-r1.apk avr-libc-2.2.1-r0.apk binutils-avr-2.42-r1.apk make-4.4.1-r2.apk avrdude-8.0-r1.apk; do if [ -s "$APK_DIR/$f" ]; then echo "[OK] $f"; else echo "[MISSING] $APK_DIR/$f"; MISSING_FILES=1; fi; done',
+      'if [ "$MISSING_FILES" -ne 0 ]; then echo "ERROR: Put all five ARM64 APK files in assets/toolchain/aarch64/ inside the plugin ZIP, then reinstall/update the plugin."; exit 11; fi',
+      'echo "Installing local APK files without network access..."',
+      'apk --no-network add "$APK_DIR/gcc-avr-14.2.0-r1.apk" "$APK_DIR/avr-libc-2.2.1-r0.apk" "$APK_DIR/binutils-avr-2.42-r1.apk" "$APK_DIR/make-4.4.1-r2.apk" "$APK_DIR/avrdude-8.0-r1.apk" || { rc=$?; echo "ERROR: Offline APK installation failed (exit $rc). Dependency APKs may also need to be bundled."; exit "$rc"; }',
+      'echo "Verifying commands..."',
+      'VERIFY=0',
+      'for c in avr-gcc avr-objcopy avr-objdump avr-size avr-nm avr-as avr-ld make avrdude; do if command -v "$c" >/dev/null 2>&1; then echo "[OK] $c: $(command -v "$c")"; else echo "[MISSING] $c"; VERIFY=1; fi; done',
+      'if [ "$VERIFY" -ne 0 ]; then echo "RESULT: FAILED - installed packages but commands are missing."; exit 12; fi',
+      'echo "RESULT: SUCCESS - AVR tools installed from local files. No network was used."',
+      'echo "avr-gcc: $(avr-gcc --version | head -n 1)"',
+      'echo "make: $(make --version | head -n 1)"',
+      'echo "avrdude: $(avrdude --version 2>&1 | head -n 1)"',
+      'echo "Setup finished. Log: $LOG"',
       'echo "Press Enter to close this setup output."',
       'read -r AVR_FORGE_PAUSE',
-      'exit "$INSTALL_STATUS"'
+      '} 2>&1 | tee "$LOG"'
     ].join("\n");
-    const wrapped = 'set -o pipefail; LOG="$HOME/avr-forge-setup.log"; CACHE_DIR="$HOME/.cache/avr-forge-apk"; mkdir -p "$CACHE_DIR"; {\n' +
-      command +
-      '\n} 2>&1 | tee "$LOG"';
-    terminalApi.write(terminalInstance.id, wrapped + "\r");
-    notify("AVR Forge", "نصب‌کننده جدید با cache قابل‌نوشتن و گزارش زنده در تب AVR Toolchain Setup اجرا شد.", "info");
+    terminalApi.write(terminalInstance.id, command + "\r");
+    notify("AVR Forge", "بسته‌های داخل ZIP به Public ترمینال منتقل شدند و نصب آفلاین آغاز شد.", "info");
     return true;
   }
+
   async function openExistingProject() {
     const fileBrowser = acode.require("fileBrowser");
 
@@ -353,6 +369,8 @@
   if (!window.acode) return;
 
   acode.setPluginInit(PLUGIN_ID, async function (_baseUrl, $page) {
+    pluginBaseUrl = String(_baseUrl || "");
+    if (!pluginBaseUrl.endsWith("/")) pluginBaseUrl += "/";
     page = $page;
 
     // Register the command FIRST. Sidebar support is optional and cannot block it.
