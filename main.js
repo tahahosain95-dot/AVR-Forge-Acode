@@ -1,4 +1,4 @@
-/* AVR Forge for Acode 0.1.19
+/* AVR Forge for Acode 0.1.20
  * Command Palette entry is registered independently from the optional sidebar app.
  */
 (function () {
@@ -87,7 +87,7 @@
       '<hr>',
       '<p>ساخت پروژه، انتخاب میکروکنترلر و ایجاد فایل‌های C و Makefile فعال است.</p>',
       '<p>پس از ساخت پروژه، بسته‌های AVR همراه پلاگین به‌صورت آفلاین در Alpine نصب می‌شوند.</p>',
-      '<small>نسخه 0.1.19</small>',
+      '<small>نسخه 0.1.20</small>',
       '</div>'
     ].join("");
   }
@@ -258,7 +258,7 @@
       'APK_DIR="' + packageDir + '"',
       'mkdir -p "$HOME/.cache/avr-forge"',
       '{',
-      'echo "AVR Forge offline toolchain setup v0.1.19"',
+      'echo "AVR Forge offline toolchain setup v0.1.20"',
       'echo "Architecture: $(apk --print-arch 2>/dev/null || uname -m)"',
       'echo "Package directory: $APK_DIR"',
       'if [ "$(apk --print-arch 2>/dev/null)" != "aarch64" ]; then echo "ERROR: This bundled toolchain is for aarch64 only."; exit 10; fi',
