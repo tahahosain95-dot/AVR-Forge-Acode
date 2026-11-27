@@ -12,20 +12,24 @@ Implemented:
 - Open an existing project folder as an Acode workspace from the AVR Forge page.
 - MCU selection from a starter list.
 - Generated `main.c`, `Makefile`, and project `README.md`.
-- Automatically opens a visible Acode Alpine terminal after project creation, checks whether `make`, `gcc-avr`, `avr-libc`, and `binutils-avr` are installed, and installs them only when one or more packages or required executables are missing.
-- Verifies the installed `avr-gcc`, `avr-objcopy`, and `make` versions in the terminal output.
+- ARM64 offline installer that reads five bundled Alpine APK files, copies them to the Acode Terminal public directory, and invokes `apk --no-network add`.
+- The installer checks the Alpine architecture and verifies `avr-gcc`, Binutils commands, `make`, and `avrdude` after installation.
 
 Not implemented yet:
-- A dedicated in-plugin compile button and HEX workflow are not implemented yet; the installed toolchain can be used from the Alpine terminal.
+- A dedicated in-plugin compile button and HEX workflow.
 - AVR register autocomplete and dedicated syntax highlighting.
-- Bundled compiler toolchain.
 
-After each project creation, AVR Forge opens the built-in Alpine terminal and checks package records and required executables. If missing, it refreshes APK indexes and installs packages using a plugin-owned writable cache at `~/.cache/avr-forge-apk`, avoiding reliance on the default APK cache directory. Setup output is streamed to the terminal and saved to `~/avr-forge-setup.log`. The installer reports the detected APK architecture, preserves the APK failure code, performs final command verification, checks for readable CA certificate bundles and APK permissions, and retries APK index updates once. It never disables HTTPS verification or package signature checks. Internet access is needed only when installation is required. Runtime behavior still requires testing on the target Acode device.
+## Offline ARM64 toolchain
 
-## Offline ARM64 toolchain files
+Before packaging the plugin ZIP, place these files in `assets/toolchain/aarch64/` with the exact names:
 
-Before building the plugin ZIP, place the five APK files in `assets/toolchain/aarch64/` using the exact filenames listed above. The ZIP must preserve this folder structure. The current installer supports Alpine `aarch64` only; other architectures are not supported in this release.
+- `gcc-avr-14.2.0-r1.apk`
+- `avr-libc-2.2.1-r0.apk`
+- `binutils-avr-2.42-r1.apk`
+- `make-4.4.1-r2.apk`
+- `avrdude-8.0-r1.apk`
 
+The current installer supports Alpine `aarch64` only. It does not refresh APK indexes or download packages. It does not bypass APK signature verification. If Alpine reports missing dependencies, matching dependency APKs must also be bundled and added to the installer command. The five primary packages may not be sufficient on a clean Alpine installation.
 ## Install
 
 1. Download the repository ZIP from GitHub.
